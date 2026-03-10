@@ -1,0 +1,316 @@
+﻿@model List<LeaveRequestDto>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f9;
+        margin: 0;
+        padding: 0;
+    }
+
+    .container-box {
+        width: 90%;
+        max-width: 1000px;
+        margin: 40px auto;
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #007bff;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 5px;
+    }
+
+    .section-title {
+        margin-top: 20px;
+        margin-bottom: 15px;
+    }
+
+    .balance-container {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 30px;
+    }
+
+    .balance-card {
+        padding: 20px;
+        border-radius: 10px;
+        width: 180px;
+        color: white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        text-align: center;
+    }
+
+    .balance-annual {
+        background: #007bff;
+    }
+
+    .balance-sick {
+        background: #28a745;
+    }
+
+    .balance-casual {
+        background: #ffc107;
+        color: black;
+    }
+
+    .balance-emergency {
+        background: #dc3545;
+    }
+
+    .balance-unpaid {
+        background: #343a40;
+    }
+
+    .balance-default {
+        background: #6c757d;
+    }
+
+    .balance-card h4 {
+        margin-bottom: 10px;
+    }
+
+    .balance-card p {
+        margin: 5px 0;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        background: #007bff;
+        color: white;
+        padding: 10px;
+        text-align: center;
+    }
+
+    td {
+        padding: 10px;
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+    }
+
+    tr:hover {
+        background: #f2f2f2;
+    }
+
+    .btn {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .btn-primary {
+        background: #007bff;
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-submit {
+        margin-top: 20px;
+        display: inline-block;
+        padding: 10px 18px;
+    }
+
+    .status-pending {
+        color: #ffc107;
+        font-weight: bold;
+    }
+
+    .status-approved {
+        color: #28a745;
+        font-weight: bold;
+    }
+
+    .status-rejected {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .text-muted {
+        color: #888;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+        .pagination button {
+            padding: 6px 12px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+
+            .pagination button:disabled {
+                background: #ccc;
+                cursor: not-allowed;
+            }
+
+    #successToast, #errorToast {
+        display: none;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 1000;
+        color: white;
+    }
+
+    #successToast {
+        background: #28a745;
+    }
+
+    #errorToast {
+        background: #dc3545;
+    }
+</style>
+
+<div class="container-box">
+
+    <h2>Employee Dashboard</h2>
+
+    <h3 class="section-title">Leave Balance</h3>
+    <div class="balance-container">
+        @foreach (var balance in ViewBag.Balances)
+        {
+            string cardClass = balance.LeaveType.ToLower() switch
+            {
+                "annual" => "balance-card balance-annual",
+                "sick" => "balance-card balance-sick",
+                "casual" => "balance-card balance-casual",
+                "emergency" => "balance-card balance-emergency",
+                "unpaid" => "balance-card balance-unpaid",
+                _ => "balance-card balance-default"
+            };
+            <div class="@cardClass">
+                <h4>@balance.LeaveType</h4>
+                <p>Total: @balance.TotalDays</p>
+                <p>Used: @balance.UsedDays</p>
+                <p><b>Remaining: @balance.RemainingDays</b></p>
+            </div>
+        }
+    </div>
+
+    <h3 class="section-title">My Leave Requests</h3>
+    <table id="leaveTable">
+        <thead>
+            <tr>
+                <th>S.No</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Days</th>
+                <th>Status</th>
+                <th>Manager Comment</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="leaveTableBody">
+            @foreach (var req in Model)
+            {
+                <tr>
+                    <td></td> <!-- S.No auto -->
+                    <td>@req.StartDate.ToShortDateString()</td>
+                    <td>@req.EndDate.ToShortDateString()</td>
+                    <td>@req.BusinessDays</td>
+                    <td>
+                        @if (req.Status == "Pending")
+                        {
+                            <span class="status-pending">@req.Status</span>
+                        }
+                        else if (req.Status == "Approved")
+                        {
+
+                            <span class="status-approved">@req.Status</span>
+                        }
+                        else
+                        {
+
+                            <span class="status-rejected">@req.Status</span>
+                        }
+                    </td>
+                    <td>@req.ManagerComment</td>
+                    <td>
+                        @if (req.Status == "Pending")
+                        {
+                            <form method="post" asp-action="CancelLeave" asp-controller="Employee">
+                                <input type="hidden" name="requestId" value="@req.RequestId" />
+                                <button type="submit" class="btn btn-danger">Cancel</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="text-muted">N/A</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        <button id="prevBtn" onclick="prevPage()">Previous</button>
+        <span id="pageInfo"></span>
+        <button id="nextBtn" onclick="nextPage()">Next</button>
+    </div>
+
+    <div id="successToast"></div>
+    <div id="errorToast"></div>
+
+    <a href="/Employee/SubmitLeave" class="btn btn-primary btn-submit">Submit Leave</a>
+
+</div>
+
+<script>
+    window.onload=function(){
+        // Toast
+        var successMessage='@TempData["Success"]';
+        var errorMessage='@TempData["Error"]';
+        if(successMessage){ var toast=document.getElementById("successToast"); toast.innerText=successMessage; toast.style.display="block"; setTimeout(()=>{toast.style.display="none";},3000);}
+        if(errorMessage){ var toast=document.getElementById("errorToast"); toast.innerText=errorMessage; toast.style.display="block"; setTimeout(()=>{toast.style.display="none";},3000);}
+
+        // Pagination
+        let rowsPerPage=5;
+        let currentPage=1;
+        let rows=document.querySelectorAll("#leaveTableBody tr");
+
+        function showPage(page){
+            let start=(page-1)*rowsPerPage;
+            let end=start+rowsPerPage;
+            for(let i=0;i<rows.length;i++){
+                rows[i].style.display=(i>=start && i<end)?"":"none";
+                if(i>=start && i<end){
+                    rows[i].querySelector('td:first-child').innerText=i+1;
+                }
+            }
+            document.getElementById("pageInfo").innerText="Page "+page+" of "+Math.ceil(rows.length/rowsPerPage);
+            document.getElementById("prevBtn").disabled=(page==1);
+            document.getElementById("nextBtn").disabled=(page==Math.ceil(rows.length/rowsPerPage));
+        }
+        window.nextPage=function(){if(currentPage<Math.ceil(rows.length/rowsPerPage)){currentPage++; showPage(currentPage);}}
+        window.prevPage=function(){if(currentPage>1){currentPage--; showPage(currentPage);}}
+        showPage(currentPage);
+    };
+</script>

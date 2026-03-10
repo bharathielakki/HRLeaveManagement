@@ -1,0 +1,41 @@
+﻿<h2>Leave Report</h2>
+
+<form method="post">
+
+    Department
+    <select name="DeptId">
+        <option value="">All</option>
+        @foreach (var d in ViewBag.Departments)
+        {
+            <option value="@d.DeptId">@d.Name</option>
+        }
+    </select>
+
+    Employee
+    <select name="EmpId">
+        <option value="">All</option>
+        @foreach (var e in ViewBag.Employees)
+        {
+            <option value="@e.EmpId">@e.FullName</option>
+        }
+    </select>
+
+    Start Date
+    <input type="date" name="StartDate" />
+
+    End Date
+    <input type="date" name="EndDate" />
+
+    Status
+    <select name="Status">
+        <option value="">All</option>
+        <option>Pending</option>
+        <option>Approved</option>
+        <option>Rejected</option>
+    </select>
+
+    <button class="btn btn-primary">
+        Search
+    </button>
+
+</form>

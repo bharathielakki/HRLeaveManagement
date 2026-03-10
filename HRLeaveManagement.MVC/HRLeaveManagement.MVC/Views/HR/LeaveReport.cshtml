@@ -1,0 +1,269 @@
+﻿@model List<HRLeaveManagement.Application.DTOs.LeaveReportDto>
+@{
+    ViewBag.Title = "Leave Report";
+}
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f9;
+    }
+
+    .container-box {
+        width: 95%;
+        max-width: 1200px;
+        margin: 40px auto;
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #007bff;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 5px;
+    }
+
+    form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 25px;
+        align-items: flex-end;
+    }
+
+    form .form-group {
+        flex: 1 1 180px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    form label {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    form input, form select {
+        padding: 8px 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+    }
+
+    form button {
+        padding: 10px 18px;
+        border: none;
+        border-radius: 5px;
+        background: #007bff;
+        color: white;
+        cursor: pointer;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    th {
+        background: #007bff;
+        color: white;
+        padding: 10px;
+        text-align: center;
+    }
+
+    td {
+        padding: 10px;
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+    }
+
+    tr:hover {
+        background: #f2f2f2;
+    }
+
+    .status-pending {
+        color: #ffc107;
+        font-weight: bold;
+    }
+
+    .status-approved {
+        color: #28a745;
+        font-weight: bold;
+    }
+
+    .status-rejected {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .no-data {
+        text-align: center;
+        margin-top: 20px;
+        font-style: italic;
+        color: #555;
+    }
+
+    /* Pagination styles */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .pagination button {
+        padding: 6px 12px;
+        border-radius: 5px;
+        border: none;
+        cursor: pointer;
+        background: #007bff;
+        color: white;
+    }
+
+    .pagination button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+</style>
+
+<div class="container-box">
+    <h2>Leave Report</h2>
+
+    <form asp-controller="HR" asp-action="LeaveReport" method="post">
+        <div class="form-group">
+            <label>Department</label>
+            <select name="DeptId" class="form-control">
+                <option value="">All</option>
+                @foreach (var d in ViewBag.Departments)
+                {
+                    <option value="@d.DeptId">@d.Name</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Employee</label>
+            <select name="EmpId" class="form-control">
+                <option value="">All</option>
+                @foreach (var e in ViewBag.Employees)
+                {
+                    <option value="@e.EmpId">@e.FullName</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Start Date</label>
+            <input type="date" name="StartDate" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label>End Date</label>
+            <input type="date" name="EndDate" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label>Status</label>
+            <select name="Status" class="form-control">
+                <option value="">All</option>
+                <option>Pending</option>
+                <option>Approved</option>
+                <option>Rejected</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="flex: 0 0 120px;">
+            <button type="submit">Search</button>
+        </div>
+    </form>
+
+    @if (Model != null && Model.Any())
+    {
+        <table id="leaveTable">
+            <thead>
+                <tr>
+                    <th>S.No</th>
+                    <th>Employee</th>
+                    <th>Leave Type</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Business Days</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="leaveTableBody">
+                @{
+                    int serial = 1;
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@serial</td>
+                            <td>@item.FullName</td>
+                            <td>@item.LeaveType</td>
+                            <td>@item.StartDate.ToShortDateString()</td>
+                            <td>@item.EndDate.ToShortDateString()</td>
+                            <td>@item.BusinessDays</td>
+                            <td class="@(item.Status == "Pending" ? "status-pending" : item.Status == "Approved" ? "status-approved" : "status-rejected")">
+                                @item.Status
+                            </td>
+                        </tr>
+                        serial++;
+                    }
+                }
+            </tbody>
+        </table>
+
+        <div class="pagination">
+            <button id="prevBtn" onclick="prevPage()">Previous</button>
+            <span id="pageInfo"></span>
+            <button id="nextBtn" onclick="nextPage()">Next</button>
+        </div>
+    }
+    else
+    {
+        <p class="no-data">No leave reports found for the selected criteria.</p>
+    }
+</div>
+
+<script>
+    let rowsPerPage = 10;
+    let currentPage = 1;
+    const rows = document.querySelectorAll("#leaveTableBody tr");
+
+    function showPage(page) {
+        const totalPages = Math.ceil(rows.length / rowsPerPage);
+        const start = (page - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+
+        rows.forEach((row, idx) => {
+            row.style.display = (idx >= start && idx < end) ? "" : "none";
+            // Update serial number dynamically
+            row.cells[0].innerText = idx + 1;
+        });
+
+        document.getElementById("pageInfo").innerText = `Page ${page} of ${totalPages}`;
+        document.getElementById("prevBtn").disabled = page === 1;
+        document.getElementById("nextBtn").disabled = page === totalPages;
+    }
+
+    function nextPage() {
+        if (currentPage < Math.ceil(rows.length / rowsPerPage)) {
+            currentPage++;
+            showPage(currentPage);
+        }
+    }
+
+    function prevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            showPage(currentPage);
+        }
+    }
+
+    window.onload = function () {
+        showPage(currentPage);
+    };
+</script>

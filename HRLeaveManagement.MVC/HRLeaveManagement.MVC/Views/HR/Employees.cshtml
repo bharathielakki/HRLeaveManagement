@@ -1,0 +1,326 @@
+﻿@model List<EmployeeDto>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f9;
+        margin: 0;
+        padding: 0;
+    }
+
+    .container-box {
+        width: 90%;
+        max-width: 1200px;
+        margin: 40px auto;
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #007bff;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 5px;
+    }
+
+    .top-btns {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .btn {
+        padding: 8px 15px;
+        border-radius: 5px;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .btn-primary {
+        background: #007bff;
+        color: white;
+    }
+
+    .btn-warning {
+        background: #ffc107;
+        color: white;
+    }
+
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-sm {
+        padding: 4px 10px;
+        font-size: 12px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    th {
+        background: #007bff;
+        color: white;
+        padding: 10px;
+        text-align: center;
+    }
+
+    td {
+        padding: 10px;
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+    }
+
+    tr:hover {
+        background: #f2f2f2;
+    }
+
+    .status-active {
+        color: #28a745;
+        font-weight: bold;
+    }
+
+    .status-inactive {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+        .pagination button {
+            padding: 6px 12px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+
+            .pagination button:disabled {
+                background: #ccc;
+                cursor: not-allowed;
+            }
+
+    /* Confirmation popup */
+    #confirmPopup {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px 30px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        z-index: 2000;
+        text-align: center;
+    }
+
+        #confirmPopup p {
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        #confirmPopup button {
+            margin: 0 10px;
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #confirmPopup .btn-yes {
+            background: #dc3545;
+            color: white;
+        }
+
+        #confirmPopup .btn-no {
+            background: #6c757d;
+            color: white;
+        }
+
+    /* Toast */
+    #successToast, #errorToast {
+        display: none;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 1000;
+        color: white;
+        font-weight: bold;
+    }
+
+    #successToast {
+        background: #28a745;
+    }
+
+    #errorToast {
+        background: #dc3545;
+    }
+</style>
+
+<div class="container-box">
+
+    <h2>Employee Management</h2>
+
+    <div class="top-btns">
+        <a href="/HR/AddEmployee" class="btn btn-primary">Add Employee</a>
+        <a asp-controller="HR" asp-action="LeaveReport" class="btn btn-primary">Generate Leave Report</a>
+    </div>
+
+    <table id="employeeTable">
+        <thead>
+            <tr>
+                <th>S.No</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Department</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="employeeTableBody">
+            @{
+                int sno = 1;
+            }
+            @foreach (var emp in Model)
+            {
+                <tr>
+                    <td>@sno</td>
+                    <td>@emp.FullName</td>
+                    <td>@emp.Email</td>
+                    <td>@emp.DepartmentName</td>
+                    <td class="@(emp.IsActive ? "status-active" : "status-inactive")">
+                        @(emp.IsActive ? "Active" : "Inactive")
+                    </td>
+                    <td>
+                        <a href="/HR/EditEmployee/@emp.EmpId" class="btn btn-warning btn-sm">Edit</a>
+                        <button class="btn btn-danger btn-sm" onclick="showConfirm(@emp.EmpId)">
+                            Deactivate
+                        </button>
+                    </td>
+                </tr>
+                sno++;
+            }
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        <button id="prevBtn" onclick="prevPage()">Previous</button>
+        <span id="pageInfo"></span>
+        <button id="nextBtn" onclick="nextPage()">Next</button>
+    </div>
+</div>
+
+<!-- Confirmation Popup -->
+<div id="confirmPopup">
+    <p>Are you sure you want to deactivate this employee?</p>
+    <button class="btn-yes" id="confirmYes">Yes</button>
+    <button class="btn-no" onclick="closeConfirm()">No</button>
+</div>
+
+<!-- Hidden Form -->
+<form id="deactivateForm" method="post" style="display:none;">
+    <input type="hidden" name="id" id="deactivateEmpId" />
+</form>
+
+<!-- Toasts -->
+<div id="successToast"></div>
+<div id="errorToast"></div>
+
+<script>
+    let empIdToDeactivate = null;
+
+    function showConfirm(empId){
+        empIdToDeactivate = empId;
+        document.getElementById("confirmPopup").style.display = "block";
+    }
+
+    function closeConfirm(){
+        empIdToDeactivate = null;
+        document.getElementById("confirmPopup").style.display = "none";
+    }
+
+    document.getElementById("confirmYes").addEventListener("click", function(){
+        if(empIdToDeactivate){
+            let form = document.getElementById("deactivateForm");
+            document.getElementById("deactivateEmpId").value = empIdToDeactivate;
+            form.action = '/HR/Deactivate';
+            form.submit();
+        }
+    });
+
+    // =====================
+    // Pagination
+    // =====================
+    window.onload=function(){
+        let rowsPerPage=10;
+        let currentPage=1;
+        let rows=document.querySelectorAll("#employeeTableBody tr");
+
+        function showPage(page){
+            let start=(page-1)*rowsPerPage;
+            let end=start+rowsPerPage;
+            for(let i=0;i<rows.length;i++){
+                rows[i].style.display=(i>=start && i<end)?"":"none";
+            }
+            document.getElementById("pageInfo").innerText="Page "+page+" of "+Math.ceil(rows.length/rowsPerPage);
+            document.getElementById("prevBtn").disabled=(page==1);
+            document.getElementById("nextBtn").disabled=(page==Math.ceil(rows.length/rowsPerPage));
+        }
+
+        window.nextPage=function(){
+            if(currentPage<Math.ceil(rows.length/rowsPerPage)){
+                currentPage++;
+                showPage(currentPage);
+            }
+        }
+
+        window.prevPage=function(){
+            if(currentPage>1){
+                currentPage--;
+                showPage(currentPage);
+            }
+        }
+
+        showPage(currentPage);
+
+        // =======================
+        // Toast messages only (no inline errors)
+        // =======================
+        var successMessage = '@TempData["Success"]';
+        var errorMessage = '@TempData["Error"]';
+
+        if(successMessage && successMessage.trim() !== ""){
+            var toast = document.getElementById("successToast");
+            toast.innerText = successMessage;
+            toast.style.display = "block";
+            setTimeout(function(){ toast.style.display = "none"; }, 3000);
+        }
+
+        if(errorMessage && errorMessage.trim() !== ""){
+            var toast = document.getElementById("errorToast");
+            toast.innerText = errorMessage;
+            toast.style.display = "block";
+            setTimeout(function(){ toast.style.display = "none"; }, 3000);
+        }
+    };
+</script>

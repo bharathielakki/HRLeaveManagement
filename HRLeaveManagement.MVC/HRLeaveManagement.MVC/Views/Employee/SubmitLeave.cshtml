@@ -1,0 +1,140 @@
+﻿@model LeaveRequestDto
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f9;
+    }
+
+    .container-box {
+        width: 400px;
+        margin: 50px auto;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+        .form-group label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+    .form-control {
+        width: 100%;
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+    }
+
+    .btn {
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+    }
+
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .error-message {
+        color: red;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+</style>
+
+<div class="container-box">
+
+    <h2>Submit Leave Request</h2>
+
+  
+
+    <form method="post">
+
+        <div class="form-group">
+            <label>Leave Type</label>
+            <select asp-for="LeaveTypeId" class="form-control">
+                <option value="1">Annual Leave</option>
+                <option value="2">Sick Leave</option>
+                <option value="3">Unpaid Leave</option>
+                <option value="4">Emergency Leave</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Start Date</label>
+            <input asp-for="StartDate" type="date" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label>End Date</label>
+            <input asp-for="EndDate" type="date" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label>Business Days</label>
+            <input asp-for="BusinessDays" type="number" class="form-control" />
+        </div>
+
+        <div style="text-align:center; margin-top:20px;">
+            <button type="submit" class="btn btn-success">
+                Submit Leave
+            </button>
+            <a href="/Employee/Dashboard" class="btn btn-secondary">
+                Cancel
+            </a>
+        </div>
+
+    </form>
+</div>
+<div id="successToast" style="display:none;
+     position:fixed; top:20px; right:20px;
+     background:#28a745; color:white; padding:15px 20px;
+     border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.2); z-index:1000;">
+</div>
+
+<div id="errorToast" style="display:none;
+     position:fixed; top:20px; right:20px;
+     background:#dc3545; color:white; padding:15px 20px;
+     border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.2); z-index:1000;">
+</div>
+<script>
+window.onload = function() {
+    var successMessage = '@TempData["Success"]';
+    var errorMessage = '@TempData["Error"]';
+
+    if(successMessage){
+        var toast = document.getElementById("successToast");
+        toast.innerText = successMessage;
+        toast.style.display = "block";
+        setTimeout(function(){ toast.style.display = "none"; }, 3000);
+    }
+
+    if(errorMessage){
+        var toast = document.getElementById("errorToast");
+        toast.innerText = errorMessage;
+        toast.style.display = "block";
+        setTimeout(function(){ toast.style.display = "none"; }, 3000);
+    }
+};
+</script>

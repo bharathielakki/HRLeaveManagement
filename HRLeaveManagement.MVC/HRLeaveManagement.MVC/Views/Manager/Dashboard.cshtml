@@ -1,0 +1,307 @@
+﻿@model List<LeaveRequestDto>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f9;
+    }
+
+    .container-box {
+        width: 90%;
+        margin: 40px auto;
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #007bff; /* Title color */
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 5px;
+    }
+
+    .top-btn {
+        margin-bottom: 20px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        background: #007bff;
+        color: white;
+        padding: 10px;
+        text-align: center;
+    }
+
+    td {
+        padding: 10px;
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+    }
+
+    tr:hover {
+        background: #f2f2f2;
+    }
+
+    .btn {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-primary {
+        background: #007bff;
+        color: white;
+        text-decoration: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+    }
+
+    .popup-box {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%,-50%);
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        width: 320px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        z-index: 1001;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    .popup-buttons {
+        margin-top: 15px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    #pageInfo {
+        font-weight: bold;
+    }
+
+    /* Toasts */
+    #successToast, #errorToast {
+        display: none;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 1002;
+        color: white;
+    }
+
+    #successToast {
+        background: #28a745;
+    }
+
+    #errorToast {
+        background: #dc3545;
+    }
+
+</style>
+
+<div class="container-box">
+
+    <h2>Manager Approval Dashboard</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>S.No</th>
+                <th>Employee</th>
+                <th>Leave Type</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Days</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="leaveTableBody">
+            @{
+                int sno = 1;
+            }
+            @foreach (var req in Model)
+            {
+                <tr>
+                    <td class="sno">@sno</td>
+                    <td>@req.EmployeeName</td>
+                    <td>@req.LeaveTypeName</td>
+                    <td>@req.StartDate.ToShortDateString()</td>
+                    <td>@req.EndDate.ToShortDateString()</td>
+                    <td>@req.BusinessDays</td>
+                    <td>
+                        <button class="btn btn-success"
+                                onclick="showApprove(@req.RequestId,@req.EmpId,@req.LeaveTypeId,@req.BusinessDays)">
+                            Approve
+                        </button>
+                        <button class="btn btn-danger"
+                                onclick="showReject(@req.RequestId)">
+                            Reject
+                        </button>
+                    </td>
+                </tr>
+                sno++;
+            }
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        <button onclick="prevPage()" class="btn btn-secondary">Previous</button>
+        <span id="pageInfo"></span>
+        <button onclick="nextPage()" class="btn btn-secondary">Next</button>
+    </div>
+
+</div>
+
+<!-- APPROVE POPUP -->
+<div id="approveBox" class="popup-box">
+    <h4>Approve Leave</h4>
+    <form method="post" asp-action="Approve">
+        <input type="hidden" id="approveRequestId" name="RequestId" />
+        <input type="hidden" id="approveEmpId" name="EmpId" />
+        <input type="hidden" id="approveLeaveTypeId" name="LeaveTypeId" />
+        <input type="hidden" id="approveBusinessDays" name="BusinessDays" />
+
+        <label>Comment</label>
+        <input type="text" name="Comment" required class="form-control" />
+
+        <div class="popup-buttons">
+            <button type="submit" class="btn btn-success">OK</button>
+            <button type="button" onclick="closeBoxes()" class="btn btn-secondary">Cancel</button>
+        </div>
+    </form>
+</div>
+
+<!-- REJECT POPUP -->
+<div id="rejectBox" class="popup-box">
+    <h4>Reject Leave</h4>
+    <form method="post" asp-action="Reject">
+        <input type="hidden" id="rejectRequestId" name="RequestId" />
+        <label>Reason</label>
+        <input type="text" name="Comment" required class="form-control" />
+        <div class="popup-buttons">
+            <button type="submit" class="btn btn-danger">OK</button>
+            <button type="button" onclick="closeBoxes()" class="btn btn-secondary">Cancel</button>
+        </div>
+    </form>
+</div>
+
+<!-- Toasts -->
+<div id="successToast"></div>
+<div id="errorToast"></div>
+
+<script>
+    // POPUP FUNCTIONS
+    function showApprove(requestId,empId,leaveTypeId,businessDays) {
+        document.getElementById("approveRequestId").value=requestId;
+        document.getElementById("approveEmpId").value=empId;
+        document.getElementById("approveLeaveTypeId").value=leaveTypeId;
+        document.getElementById("approveBusinessDays").value=businessDays;
+
+        document.getElementById("approveBox").style.display="block";
+        document.getElementById("rejectBox").style.display="none";
+    }
+
+    function showReject(requestId) {
+        document.getElementById("rejectRequestId").value=requestId;
+        document.getElementById("rejectBox").style.display="block";
+        document.getElementById("approveBox").style.display="none";
+    }
+
+    function closeBoxes() {
+        document.getElementById("approveBox").style.display="none";
+        document.getElementById("rejectBox").style.display="none";
+    }
+
+    // PAGINATION
+    let currentPage = 1;
+    let rowsPerPage = 5;
+    let rows;
+
+    window.onload = function() {
+        rows = document.querySelectorAll("#leaveTableBody tr");
+        showPage(currentPage);
+
+        // Toasts
+        var successMessage = '@TempData["Success"]';
+        var errorMessage = '@TempData["Error"]';
+
+        if(successMessage){
+            var toast = document.getElementById("successToast");
+            toast.innerText = successMessage;
+            toast.style.display = "block";
+            setTimeout(function(){ toast.style.display = "none"; }, 3000);
+        }
+
+        if(errorMessage){
+            var toast = document.getElementById("errorToast");
+            toast.innerText = errorMessage;
+            toast.style.display = "block";
+            setTimeout(function(){ toast.style.display = "none"; }, 3000);
+        }
+    };
+
+    function showPage(page) {
+        let start = (page - 1) * rowsPerPage;
+        let end = start + rowsPerPage;
+        for (let i = 0; i < rows.length; i++) {
+            rows[i].style.display = (i >= start && i < end) ? "" : "none";
+        }
+        document.getElementById("pageInfo").innerText = "Page " + page + " of " + Math.ceil(rows.length / rowsPerPage);
+    }
+
+    function nextPage() {
+        if(currentPage < Math.ceil(rows.length / rowsPerPage)){
+            currentPage++;
+            showPage(currentPage);
+        }
+    }
+
+    function prevPage() {
+        if(currentPage > 1){
+            currentPage--;
+            showPage(currentPage);
+        }
+    }
+
+</script>
